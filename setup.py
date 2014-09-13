@@ -6,4 +6,4 @@ setup(name='readfile',
       author='Cristobal Sifon',
       author_email='sifon@strw.leidenuniv.nl',
       url='http://home.strw.leidenuniv.nl/~sifon/readfile/',
-      modules=['readfile'])
+      packages=['readfile'])
