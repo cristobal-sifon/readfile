@@ -1,4 +1,5 @@
 setup.py
+readfile/readfile.py
 readfile.egg-info/PKG-INFO
 readfile.egg-info/SOURCES.txt
 readfile.egg-info/dependency_links.txt
