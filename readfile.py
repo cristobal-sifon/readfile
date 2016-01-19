@@ -1,45 +1,46 @@
 # -*- coding: utf-8 -*-
 import numpy
-from itertools import count
+from itertools import count, izip
 
 def dict(filename, cols=None, dtype=float, include=None, exclude='#', 
          delimiter='', removechar='#', hmode='1', linenum=1,
          hsep='', lower=False):
-  """
-  Creates a dictionary in which each chosen column in the file is an element
-  of the dictionary, where keys correspond to column names.
+    """
+    Creates a dictionary in which each chosen column in the file is an element
+    of the dictionary, where keys correspond to column names.
 
-  Uses the functions header and table to create a dictionary with the columns
-  of the file (see each function's help).
+    Uses the functions header and table to create a dictionary with the columns
+    of the file (see each function's help).
 
-  The file must have a header in which all column names are given.
+    The file must have a header in which all column names are given.
 
-  """
-  if type(cols) in (str, int):
-    cols = (cols,)
-  full_output = False
-  if cols is not None:
-    if type(cols[0]) == str:
-      full_output = True
-  head = header(filename, cols=cols, removechar=removechar,
-                hmode=hmode, linenum=linenum, hsep=hsep, lower=lower,
-                full_output=full_output)
-  if full_output:
-    head, cols = head
-  data = table(filename, cols=cols, dtype=dtype, include=include, 
-               exclude=exclude, delimiter=delimiter)
-  if type(data) == numpy.ndarray:
-    if len(data.shape) == 1:
-      dic = {head[0]: data}
+    """
+    #if type(cols) in (str, int):
+    if isinstance(cols, basestring) or isinstance(cols, int)
+        cols = (cols,)
+    full_output = False
+    if cols is not None:
+        if isinstance(cols[0], basestring):
+            full_output = True
+    head = header(filename, cols=cols, removechar=removechar,
+                    hmode=hmode, linenum=linenum, hsep=hsep, lower=lower,
+                    full_output=full_output)
+    if full_output:
+        head, cols = head
+    data = table(filename, cols=cols, dtype=dtype, include=include, 
+                 exclude=exclude, delimiter=delimiter)
+    if type(data) == numpy.ndarray:
+        if len(data.shape) == 1:
+            dic = {head[0]: data}
+        else:
+            dic = {head[0]: data[0]}
+            for i in xrange(1, len(head)):
+                dic[head[i]] = data[i]
     else:
-      dic = {head[0]: data[0]}
-      for i in range(1, len(head)):
-        dic[head[i]] = data[i]
-  else:
-    dic = {head[0]: data[0]}
-    for i in range(1, len(head)):
-      dic[head[i]] = data[i]
-  return dic
+        dic = {head[0]: data[0]}
+        for i in xrange(1, len(head)):
+            dic[head[i]] = data[i]
+    return dic
 
 def header(filename, cols=None, removechar='#', hmode='1',
            linenum=0, hsep='', lower=False, full_output=False):
@@ -98,7 +99,7 @@ def header(filename, cols=None, removechar='#', hmode='1',
             hmode=3
         ApJ table format. File header contains a "byte-by-byte" description
         of the columns. No hashtags need to be present, but readfile can
-        handle them if they are.
+        handle them if they are. NOT YET IMPLEMENTED
 
         Examples
         --------
@@ -126,24 +127,26 @@ def header(filename, cols=None, removechar='#', hmode='1',
         All leading and trailing spaces are removed from column names.
 
     """
+    if isinstance(cols, int) or isinstance(cols, basestring):
+        cols = (cols,)
+
     if cols is not None:
         tp = type(cols[0])
-        if tp not in (int, str):
+        cols_items_are_str = isinstance(cols[0], basestring)
+        cols_items_are_int = isinstance(cols[0], int)
+        if not (cols_items_are_int or cols_items_are_str):
             raise TypeError('wrong type in cols, must be either str or int')
         for c in cols:
             if type(c) != tp:
-                msg = 'All elements from cols must be of the same type'
+                msg = 'All elements of cols must be of the same type'
                 raise ValueError(msg)
+        if cols_items_are_str:
+            colnums = []
     if removechar not in (False, None):
-        if type(removechar) != str:
-            raise TypeError('wrong type for removechar, should be str')
+        if not isinstance(removechar, basestring):
+            raise TypeError('wrong type for removechar, should be a string')
 
     head = []
-    if type(cols) in (int, str):
-        cols = (cols,)
-    if cols is not None:
-        if tp == str:
-            colnums = []
     # horizontal header
     if hmode == '1':
         file = open(filename)
@@ -168,46 +171,58 @@ def header(filename, cols=None, removechar='#', hmode='1',
             head = head.split(hsep)
         # select columns
         if cols is not None:
-            #aux = []
-            if tp == str:
-                aux = [h for h in head if h in cols]
+            if cols_items_are_str:
+                #aux = [h for h in head if h in cols]
                 colnums = numpy.array([i for i, h in enumerate(head) \
                                        if h in cols])
+                head = [h for h in head if h in cols]
             else:
-                aux = [h for i, h in enumerate(head) if i in cols]
-            head = aux
+                #aux = [h for i, h in enumerate(head) if i in cols]
+                head = [h for i, h in enumerate(head) if i in cols]
+            #head = aux
 
     # vertical header
     elif hmode == '2':
         data = table(filename, cols=(1,2), dtype=(int,str), include='#')
-        num  = data[0] # column numbers
-        name = list(data[1]) # column names
+        # column numbers
+        num  = data[0]
+        # column names
+        name = list(data[1])
         if cols is None:
             head = name
         else:
             head = []
-            if tp == str:
+            if cols_items_are_str:
                 head = [i for i in cols if i in name]
                 colnums = numpy.array([name.index(i) 
                                        for i in cols if i in name])
             else:
-                head = [name[i] for i in xrange(len(num)) if num[i]-1 in cols]
+                #head = [name[i] for i in xrange(len(num)) if num[i]-1 in cols]
+                head = [name[i] for i, n in enumerate(num) if n-1 in cols]
             head = numpy.array(head, dtype=str)
 
     if lower:
         head = numpy.array([h.lower() for h in head])
 
     # remove leading and trailing spaces from each column name
-    for i in xrange(len(head)):
-        if len(head[i]) == 0:
+    #for i in xrange(len(head)):
+        #if len(head[i]) == 0:
+            #continue
+        #while head[i][0] == ' ':
+            #head[i] = head[i][1:]
+        #while head[i][-1] == ' ':
+            #head[i] = head[i][:-1]
+    for i, h in enumerate(head):
+        if len(h) == 0:
             continue
-        while head[i][0] == ' ':
-            head[i] = head[i][1:]
-        while head[i][-1] == ' ':
-            head[i] = head[i][:-1]
+        while h[0] == ' ':
+            head[i] = h[1:]
+        while h[-1] == ' ':
+            head[i] = h[:-1]
 
     if cols is not None:
-        if tp == int:
+        #if tp == int:
+        if cols_items_are_int:
             colnums = cols
     if full_output:
         return head, colnums
@@ -263,17 +278,18 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         specified type. If dtype=all, a numpy array will be returned
 
     """
-    if type(cols) in (int, str):
+    #if type(cols) in (int, str):
+    if isinstance(cols, int) or isinstance(cols, basestring):
         cols = [cols]
 
-    data = []
-    if cols is not None:
-        for i in cols:
-            data.append([])
+    if cols is None:
+        data = []
+    else:
+        data = [[] for i in cols]
 
     file = open(filename)
     if include:
-        if type(include) in (str, numpy.string_):
+        if isinstance(include, basestring):
             include = [include]
         for line in file:
             for i in include:
@@ -281,7 +297,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                     data = _append_single_line(data, line, delimiter,
                                                dtype, cols)
     elif exclude:
-        if type(exclude) in (str, numpy.string_):
+        if isinstance(include, basestring):
             exclude = [exclude]
         for line in file:
             for e in exclude:
@@ -302,7 +318,8 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     # one single array (if force_array is set to False)
     if not force_array:
         if len(data) > 1:
-            if type(data[0]) == list:
+            #if type(data[0]) == list:
+            if hasattr(data[0], '__iter__'):
                 if len(data[0]) == 1:
                     table = []
                     if dtype is None:
@@ -321,7 +338,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                             except ValueError:
                                 table.append(i[0])
                     else:
-                        for i, tp in zip(data, dtype):
+                        for i, tp in izip(data, dtype):
                             try:
                                 table.append(tp(i[0]))
                             except ValueError:
@@ -346,8 +363,9 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                 return numpy.array(data, dtype=str)
     # many columns, many rows
     table = []
-    if type(dtype) in (list, tuple, numpy.ndarray):
-        for tp, row in zip(dtype, data):
+    #if type(dtype) in (list, tuple, numpy.ndarray):
+    if hasattr(dtype, '__iter__'):
+        for tp, row in izip(dtype, data):
             try:
                 try:
                     table.append(numpy.array(row, dtype=tp))
@@ -399,49 +417,50 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
         line = line.split()
     else:
         line = line.replace('\n', '').split(delimiter)
-    if type(dtype) in (list, numpy.ndarray, tuple):
+    if hasattr(dtype, '__iter__'):
         if cols is None:
             if len(dtype) == len(line):
-                for i in range(len(line)):
+                for i, dt, col in izip(count(), dtype, line):
                     try:
-                        table[i].append(dtype[i](line[i]))
+                        table[i].append(dt(col))
                     except IndexError:
                         table.append([])
-                        table[i].append(dtype[i](line[i]))
+                        table[i].append(dt(col))
             else:
                 msg = 'array dtype has a different length than the line'
-                msg += ' (dtype:%d; line:%d)' %(len(dtype), len(line))
+                msg += ' (dtype:{0}; line:{1})'.format(len(dtype), len(line))
                 raise IndexError(msg)
         elif len(dtype) == len(cols):
-            for i in xrange(len(cols)):
-                table[i].append(dtype[i](line[cols[i]]))
+            for i, dt, col in izip(count(), dtype, cols):
+                table[i].append(dt(line[col]))
             return table
         else:
             msg = 'arrays cols and dtype have different lengths in line'
-            msg += ' (cols: %d; dtype:%d; line:%d)' \
-                    %(len(cols), len(dtype), len(line))
+            msg += ' (cols:{0}; dtype:{1}; line:{2})'.format(len(cols),
+                                                             len(dtype),
+                                                             len(line))
             raise IndexError(msg)
                        
     elif type(dtype) == type:
         if cols is None:
-            for i in range(len(line)):
+            for i, col in enumerate(line):
                 try:
                     try:
-                        table[i].append(dtype(line[i]))
+                        table[i].append(dtype(col))
                     except ValueError:
-                        table[i].append(line[i])
+                        table[i].append(col)
                 except IndexError:
                     table.append([])
                     try:
-                        table[i].append(dtype(line[i]))
+                        table[i].append(dtype(col))
                     except ValueError:
-                        table[i].append(line[i])
+                        table[i].append(col)
         else:
-            for i in range(len(cols)):
+            for i, col in enumerate(cols):
                 try:
-                    table[i].append(dtype(line[cols[i]]))
+                    table[i].append(dtype(line[col]))
                 except ValueError:
-                    table[i].append(line[cols[i]])
+                    table[i].append(line[col])
         return table
     else:
         if cols is None:
@@ -452,5 +471,5 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
                     table.append([])
                     table[i].append(l)
         else:
-            table = [line[cols[i]] for i in xrange(len(cols))]
+            table = [line[col] for col in cols]
     return table

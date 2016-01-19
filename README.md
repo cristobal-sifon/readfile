@@ -5,11 +5,11 @@ Flexible python module to read ascii files as either tables or dictionaries. The
 
 This module contains three functions:
 
-    header(filename, **args)
+    header(filename, **kwargs)
 returns the header of a file as a list of strings.
 
-    table(filename, **args)
+    table(filename, **kwargs)
 returns the data in the file, where each column is a numpy array
 
-    dict(filename, **args)
+    dict(filename, **kwargs)
 a wrapper of the previous two, where the data is a dictionary with the keys being column names and the corresponding data.
