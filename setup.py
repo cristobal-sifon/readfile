@@ -7,5 +7,4 @@ setup(name='readfile',
       author_email='sifon@strw.leidenuniv.nl',
       url='https://github.com/cristobal-sifon/readfile',
       modules=['readfile'],
-      install_requires=['itertools',
-                        'numpy>=1.5.0'])
+      install_requires=['numpy>=1.5.0'])
