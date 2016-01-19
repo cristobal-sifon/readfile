@@ -16,7 +16,7 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
 
     """
     #if type(cols) in (str, int):
-    if isinstance(cols, basestring) or isinstance(cols, int)
+    if isinstance(cols, basestring) or isinstance(cols, int):
         cols = (cols,)
     full_output = False
     if cols is not None:
@@ -42,8 +42,8 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
             dic[head[i]] = data[i]
     return dic
 
-def header(filename, cols=None, removechar='#', hmode='1',
-           linenum=0, hsep='', lower=False, full_output=False):
+def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
+           hsep='', lower=False, remove_spaces=True, full_output=False):
     """
     Returns the header of the file, which can be defined in various ways.
     
@@ -73,6 +73,8 @@ def header(filename, cols=None, removechar='#', hmode='1',
         <comma>. Used only in *mode=1*.
     lower: boolean (default False)
         whether to return all column names in lower case
+    remove_spaces : bool (default True)
+        If True, remove leading and trailing spaces from all string elements.
     full_output: bool (default False)
         if True, return the column numbers as well. Useful when the columns
         are defined from their names.
@@ -128,7 +130,7 @@ def header(filename, cols=None, removechar='#', hmode='1',
 
     """
     if isinstance(cols, int) or isinstance(cols, basestring):
-        cols = (cols,)
+        cols = [cols]
 
     if cols is not None:
         tp = type(cols[0])
@@ -172,14 +174,11 @@ def header(filename, cols=None, removechar='#', hmode='1',
         # select columns
         if cols is not None:
             if cols_items_are_str:
-                #aux = [h for h in head if h in cols]
                 colnums = numpy.array([i for i, h in enumerate(head) \
                                        if h in cols])
                 head = [h for h in head if h in cols]
             else:
-                #aux = [h for i, h in enumerate(head) if i in cols]
                 head = [h for i, h in enumerate(head) if i in cols]
-            #head = aux
 
     # vertical header
     elif hmode == '2':
@@ -197,28 +196,23 @@ def header(filename, cols=None, removechar='#', hmode='1',
                 colnums = numpy.array([name.index(i) 
                                        for i in cols if i in name])
             else:
-                #head = [name[i] for i in xrange(len(num)) if num[i]-1 in cols]
-                head = [name[i] for i, n in enumerate(num) if n-1 in cols]
+                #head = [name[i] for i, n in enumerate(num) if n-1 in cols]
+                head = [name_i for name_i, num_i in izip(name, num)
+                        if num_i-1 in cols]
             head = numpy.array(head, dtype=str)
 
     if lower:
         head = numpy.array([h.lower() for h in head])
 
     # remove leading and trailing spaces from each column name
-    #for i in xrange(len(head)):
-        #if len(head[i]) == 0:
-            #continue
-        #while head[i][0] == ' ':
-            #head[i] = head[i][1:]
-        #while head[i][-1] == ' ':
-            #head[i] = head[i][:-1]
-    for i, h in enumerate(head):
-        if len(h) == 0:
-            continue
-        while h[0] == ' ':
-            head[i] = h[1:]
-        while h[-1] == ' ':
-            head[i] = h[:-1]
+    if remove_spaces:
+        for i, h in enumerate(head):
+            if len(h) == 0:
+                continue
+            while h[0] == ' ':
+                head[i] = h[1:]
+            while h[-1] == ' ':
+                head[i] = h[:-1]
 
     if cols is not None:
         #if tp == int:
@@ -252,8 +246,8 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         Comment character(s), of any length. Lines starting with (any of the 
         elements of) *exclude* are not considered for the table.
     include : str or list of strings (default None)
-        Lines to be included in the table must start with (any of the elements of) 
-        *include*, (each of which) can be of any length. If given, it
+        Lines to be included in the table must start with (any of the elements
+        of) *include*, (each of which) can be of any length. If given, it
         overrides *exclude*. Cannot have any spaces, and leading spaces in
         the file are ignored.
     delimiter : str (default ' ')
@@ -270,7 +264,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         single array with all the selected elements of the row/column.
     remove_spaces : bool (default True)
         If True, remove leading and trailing spaces from all string elements.
-        NOT YET IMPLEMENTED
+        NOT YET IMPLEMENTED.
 
     Returns
     -------
