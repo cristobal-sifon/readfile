@@ -2,7 +2,7 @@
 import numpy
 from itertools import count, izip
 
-def dict(filename, cols=None, dtype=float, include=None, exclude='#', 
+def dict(filename, cols=None, dtype=float, include=None, exclude='#',
          delimiter='', removechar='#', hmode='1', linenum=1,
          hsep='', lower=False):
     """
@@ -27,7 +27,7 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
                     full_output=full_output)
     if full_output:
         head, cols = head
-    data = table(filename, cols=cols, dtype=dtype, include=include, 
+    data = table(filename, cols=cols, dtype=dtype, include=include,
                  exclude=exclude, delimiter=delimiter)
     if type(data) == numpy.ndarray:
         if len(data.shape) == 1:
@@ -37,6 +37,8 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
             for i in xrange(1, len(head)):
                 dic[head[i]] = data[i]
     else:
+        print head
+        print len(head), len(data)
         dic = {head[0]: data[0]}
         for i in xrange(1, len(head)):
             dic[head[i]] = data[i]
@@ -46,7 +48,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
            hsep='', lower=False, remove_spaces=True, full_output=False):
     """
     Returns the header of the file, which can be defined in various ways.
-    
+
     Parameters
     ----------
     filename : str
@@ -54,28 +56,31 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
     cols : int/str or list of int/str's (default None, which takes all columns)
         Columns wanted in the output, either by number or by name (numbered
         starting at 0).
-    removechar : str, optional (default '#')
+    removechar : str
         Character(s) to be removed from the first line, not part of the header.
-        Used only when *mode=1*. Can also be None or False if not used.
+        If *hmode='1'* and *linenum=0* then the header will be the first line
+        in the file starting with *removechar*. If *hmode='2'* then all lines
+        starting with *removechar* will be considered part of the header.
     hmode : {'1', '2'}
         How the header is defined. mode '1' means column names are given in
         the first line, separated by spaces; mode '2' means they are given in
         separate lines at the top of the file with column numbers, as in
         SExtractor outputs. Note that the latter headers usually enumerate the
-        columns starting from 1, which is corrected here. See below for
-        further explanation
-    linenum : int (default 0)
+        columns starting from 1, which is corrected here to the python
+        convention. See below for further explanation.
+    linenum : int
         The line number in which the header is located (count starts at 1). If
-        *linenum=0* and *mode=1*, the header is assumed to be the first line
-        starting with *removechar*.
-    hsep : char (default ' ')
+        *linenum=0* and *hmode='1'*, the header is assumed to be the first
+        line starting with *removechar*. If *hmode=='2'*, then this is used as
+        the column number containing the names of the data columns.
+    hsep : char
         Separator between column names. Typically <space> (default) or
         <comma>. Used only in *mode=1*.
-    lower: boolean (default False)
+    lower: boole
         whether to return all column names in lower case
-    remove_spaces : bool (default True)
+    remove_spaces : bool
         If True, remove leading and trailing spaces from all string elements.
-    full_output: bool (default False)
+    full_output: bool
         if True, return the column numbers as well. Useful when the columns
         are defined from their names.
 
@@ -112,7 +117,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             removechar = '|' , sep = '|' :
             | ID | RA | Dec | redshift | mag_r |
 
-        hmode=2
+        hmode=2, linenum=
         # 1   ID                            Unique object identification
         # 2   RA                            J2000 Right Ascension (deg)
         # 3   Dec                           J2000 Declination (deg)
@@ -121,7 +126,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
                                             (mag)
 
         hmode=3
-        
+
 
     NOTES
     -----
@@ -182,18 +187,23 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
 
     # vertical header
     elif hmode == '2':
-        data = table(filename, cols=(1,2), dtype=(int,str), include='#')
+        if not removechar:
+            msg = "ERROR: when setting hmode='2' must include removechar"
+            print msg
+            exit()
+        data = table(filename, cols=linenum, dtype=str, include=removechar)
         # column numbers
-        num  = data[0]
+        num  = range(len(data))
         # column names
-        name = list(data[1])
+        name = list(data)
+        #print num, name
         if cols is None:
             head = name
         else:
             head = []
             if cols_items_are_str:
                 head = [i for i in cols if i in name]
-                colnums = numpy.array([name.index(i) 
+                colnums = numpy.array([name.index(i)
                                        for i in cols if i in name])
             else:
                 #head = [name[i] for i, n in enumerate(num) if n-1 in cols]
@@ -222,7 +232,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         return head, colnums
     return head
 
-def table(filename, cols=None, dtype=float, exclude='#', include=None, 
+def table(filename, cols=None, dtype=float, exclude='#', include=None,
           delimiter='', whole=False, force_array=False, remove_spaces=True):
     """
     Returns a table with all the data in a file. Each column is returned as a
@@ -238,12 +248,12 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         those can be included.
     dtype : type or list of types (default float)
         A generic type for all columns or a type for each of the columns in
-        *cols*. If *dtype* is a list of types, then it must be of the same 
-        length of *cols*, or its length equal to the number of columns in the 
+        *cols*. If *dtype* is a list of types, then it must be of the same
+        length of *cols*, or its length equal to the number of columns in the
         file if cols==None. If a character cannot be converted to the desired
         type, the elements in the corresponding column will be strings.
     exclude : str or list of strings (default '#')
-        Comment character(s), of any length. Lines starting with (any of the 
+        Comment character(s), of any length. Lines starting with (any of the
         elements of) *exclude* are not considered for the table.
     include : str or list of strings (default None)
         Lines to be included in the table must start with (any of the elements
@@ -401,7 +411,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
     Auxiliary function, not meant to be used directly.
 
     Appends a single line to a table. Devised to iteratively make a table from
-    a file. Can give a specified type to each field in the line (specified by 
+    a file. Can give a specified type to each field in the line (specified by
     "dtype").
 
     """
@@ -434,7 +444,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
                                                              len(dtype),
                                                              len(line))
             raise IndexError(msg)
-                       
+
     elif type(dtype) == type:
         if cols is None:
             for i, col in enumerate(line):
