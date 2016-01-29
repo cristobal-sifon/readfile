@@ -37,7 +37,6 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
             for i in xrange(1, len(head)):
                 dic[head[i]] = data[i]
     else:
-        print len(head), len(data)
         dic = {head[0]: data[0]}
         for i in xrange(1, len(head)):
             dic[head[i]] = data[i]
