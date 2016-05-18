@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import numpy
 from itertools import count, izip
+from numpy import array, ndarray
+
 
 def dict(filename, cols=None, dtype=float, include=None, exclude='#',
          delimiter='', removechar='#', hmode='1', linenum=1,
@@ -29,7 +30,7 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
         head, cols = head
     data = table(filename, cols=cols, dtype=dtype, include=include,
                  exclude=exclude, delimiter=delimiter)
-    if type(data) == numpy.ndarray:
+    if type(data) == ndarray:
         if len(data.shape) == 1:
             dic = {head[0]: data}
         else:
@@ -41,6 +42,7 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
         for i in xrange(1, len(head)):
             dic[head[i]] = data[i]
     return dic
+
 
 def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
            hsep='', lower=False, remove_spaces=True, full_output=False):
@@ -177,7 +179,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         # select columns
         if cols is not None:
             if cols_items_are_str:
-                colnums = numpy.array([i for i, h in enumerate(head) \
+                colnums = array([i for i, h in enumerate(head) \
                                        if h in cols])
                 head = [h for h in head if h in cols]
             else:
@@ -201,16 +203,16 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             head = []
             if cols_items_are_str:
                 head = [i for i in cols if i in name]
-                colnums = numpy.array([name.index(i)
+                colnums = array([name.index(i)
                                        for i in cols if i in name])
             else:
                 #head = [name[i] for i, n in enumerate(num) if n-1 in cols]
                 head = [name_i for name_i, num_i in izip(name, num)
                         if num_i-1 in cols]
-            head = numpy.array(head, dtype=str)
+            head = array(head, dtype=str)
 
     if lower:
-        head = numpy.array([h.lower() for h in head])
+        head = array([h.lower() for h in head])
 
     # remove leading and trailing spaces from each column name
     if remove_spaces:
@@ -229,6 +231,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
     if full_output:
         return head, colnums
     return head
+
 
 def table(filename, cols=None, dtype=float, exclude='#', include=None,
           delimiter='', whole=False, force_array=False, remove_spaces=True):
@@ -345,64 +348,67 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                                 table.append(tp(i[0]))
                             except ValueError:
                                 table.append(i[0])
-                    return table
+                    return array(table)
         # the same if only one column is selected
         else:
             data = data[0]
             try:
                 if len(data[0]) == 1:
                     try:
-                        return dtype(data[0][0])
+                        #return dtype(data[0])
+                        return array(data[0], dtype=dtype)
                     except ValueError:
-                        return data[0][0]
+                        #return data[0][0]
+                        return array(table[0], dtype=dtype)
             except TypeError:
                 pass
             except IndexError:
                 pass
             try:
-                return numpy.array(data, dtype=dtype)
+                return array(data, dtype=dtype)
             except ValueError:
-                return numpy.array(data, dtype=str)
+                return array(data, dtype=str)
     # many columns, many rows
     table = []
-    #if type(dtype) in (list, tuple, numpy.ndarray):
+    #if type(dtype) in (list, tuple, ndarray):
     if hasattr(dtype, '__iter__'):
         for tp, row in izip(dtype, data):
             try:
                 try:
-                    table.append(numpy.array(row, dtype=tp))
+                    table.append(array(row, dtype=tp))
                 except ValueError:
-                    table.append(numpy.array(row, dtype=str))
+                    table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return []
+                return array([])
     elif dtype is None:
         for row in data:
             try:
                 try:
-                    table.append(numpy.array(row, dtype=int))
+                    table.append(array(row, dtype=int))
                 except ValueError:
                     try:
-                        table.append(numpy.array(row, dtype=float))
+                        table.append(array(row, dtype=float))
                     except ValueError:
-                        table.append(numpy.array(row, dtype=str))
+                        table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return []
+                return array([])
     else:
         for row in data:
             try:
                 try:
-                    table.append(numpy.array(row, dtype=dtype))
+                    table.append(array(row, dtype=dtype))
                 except ValueError:
-                    table.append(numpy.array(row, dtype=str))
+                    table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return []
+                return array([])
     if cols is not None:
         if len(cols) == 1:
-            return table[0]
-    return table
+            return array(table[0])
+    return array(table)
+
 
 def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
     """
