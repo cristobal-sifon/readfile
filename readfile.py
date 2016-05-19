@@ -283,7 +283,6 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         specified type. If dtype=all, a numpy array will be returned
 
     """
-    #if type(cols) in (int, str):
     if isinstance(cols, int) or isinstance(cols, basestring):
         cols = [cols]
 
@@ -323,7 +322,6 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     # one single array (if force_array is set to False)
     if not force_array:
         if len(data) > 1:
-            #if type(data[0]) == list:
             if hasattr(data[0], '__iter__'):
                 if len(data[0]) == 1:
                     table = []
@@ -348,18 +346,16 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                                 table.append(tp(i[0]))
                             except ValueError:
                                 table.append(i[0])
-                    return array(table)
+                    return table
         # the same if only one column is selected
         else:
             data = data[0]
             try:
                 if len(data[0]) == 1:
                     try:
-                        #return dtype(data[0])
-                        return array(data[0], dtype=dtype)
+                        return dtype(data[0])
                     except ValueError:
-                        #return data[0][0]
-                        return array(table[0], dtype=dtype)
+                        return data[0][0]
             except TypeError:
                 pass
             except IndexError:
@@ -370,7 +366,6 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                 return array(data, dtype=str)
     # many columns, many rows
     table = []
-    #if type(dtype) in (list, tuple, ndarray):
     if hasattr(dtype, '__iter__'):
         for tp, row in izip(dtype, data):
             try:
@@ -380,7 +375,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                     table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return array([])
+                return []
     elif dtype is None:
         for row in data:
             try:
@@ -393,7 +388,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                         table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return array([])
+                return []
     else:
         for row in data:
             try:
@@ -403,11 +398,11 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                     table.append(array(row, dtype=str))
             except IndexError:
                 print 'WARNING: No data selected from file', filename
-                return array([])
+                return []
     if cols is not None:
         if len(cols) == 1:
-            return array(table[0])
-    return array(table)
+            return table[0]
+    return table
 
 
 def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
