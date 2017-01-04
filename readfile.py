@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from itertools import count, izip
 from numpy import array, char, ndarray
+from os.path import isfile
 
 
 def dict(filename, cols=None, dtype=float, include=None, exclude='#',
@@ -222,6 +223,64 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
     return head
 
 
+def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
+         append=False, verbose=True):
+    """
+    Save output file
+
+    Parameters
+    ----------
+    output : str
+        Name of the output file
+    data : 2-d array
+    fmt : string of space-separated formats (a la Python 2.x), or list
+    header : str (optional)
+    overwrite : `bool`
+        Whether to overwrite the file if it exists
+    append : bool
+        If the file exists, whether to append information at the end.
+        Overrides `overwrite`.
+    verbose : bool
+
+    """
+    # does the output exist?
+    if isfile(output) and not overwrite:
+        msg = 'File {0} already exists. Skipping.'.format(output)
+        print msg
+        return
+    ncols = len(data)
+    # do all the columns have the same length?
+    if hasattr(data[0], '__iter__'):
+        nrows = len(data[0])
+        for i, column in enumerate(data):
+            if len(column) != nrows:
+                msg = 'All columns must have the same length.'
+                msg += ' Column lengths: {0}'.format([len(c) for c in data])
+                raise ValueError(msg)
+    # append or overwrite
+    if isfile and append:
+        out = open(output, 'a')
+    else:
+        out = open(output, 'w')
+    # make fmt a list so we can introduce the chosen delimiter
+    if isinstance(fmt, basestring):
+        fmt = fmt.split()
+    if len(fmt) == 1:
+        fmt = fmt * ncols
+    #elif len(fmt) != ncols:
+        #msg = 'WARNING in readfile.save():
+    fmt = delimiter.join(fmt)
+    # save file! start with the header
+    if len(header) > 0:
+        print >>out, header
+    for i in izip(*data):
+        print >>out, fmt %i
+    out.close()
+    if verbose:
+        print 'Saved file {0}'.format(output)
+    return
+
+
 def table(filename, cols=None, dtype=float, exclude='#', include=None,
           delimiter='', whole=False, force_array=False, remove_spaces=True):
     """
@@ -293,9 +352,15 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         if isinstance(include, basestring):
             exclude = [exclude]
         for line in file:
+            add = True
+            #print line
             for e in exclude:
+                #print e, line[:len(e)]
                 if line[:len(e)] == e or line.replace(' ', '') == '\n':
+                    add = False
                     break
+                #print 'appending!'
+            if add:
                 data = _append_single_line(data, line, delimiter,
                                            dtype, cols)
     else:
