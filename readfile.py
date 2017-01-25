@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from itertools import count, izip
-from numpy import array, ndarray
+from numpy import array, char, ndarray
 from os.path import isfile
 
 
@@ -17,7 +17,6 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
     The file must have a header in which all column names are given.
 
     """
-    #if type(cols) in (str, int):
     if isinstance(cols, basestring) or isinstance(cols, int):
         cols = (cols,)
     full_output = False
@@ -159,23 +158,17 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
     if hmode == '1':
         file = open(filename)
         if linenum > 0:
-            for i in xrange(linenum):
-                head = file.readline().replace('\n', '')
-            if removechar:
-                if head[:len(removechar)] == removechar:
-                    head = head[len(removechar):]
-                if head[-len(removechar)] == removechar:
-                    head = head[:-len(removechar)]
-        elif removechar:
-            head = file.readline()
-            if head[:len(removechar)] == removechar:
-                head = head[len(removechar):]
+            for i in xrange(linenum-1):
+                head = file.readline()
+        head = file.readline().strip()
+        if removechar:
+            head = head.strip(removechar)
         file.close()
-        # split
-        if hsep in ('', ' ', '\t'):
+        # remove line breaks and spaces before splitting
+        head = head.strip()
+        if len(hsep) == 0:
             head = head.split()
         else:
-            head = head.replace('\n', '')
             head = head.split(hsep)
         # select columns
         if cols is not None:
@@ -220,13 +213,9 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         for i, h in enumerate(head):
             if len(h) == 0:
                 continue
-            while h[0] == ' ':
-                head[i] = h[1:]
-            while h[-1] == ' ':
-                head[i] = h[:-1]
+            head = char.strip(head, ' ')
 
     if cols is not None:
-        #if tp == int:
         if cols_items_are_int:
             colnums = cols
     if full_output:
@@ -379,12 +368,15 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
             if line.replace(' ', '') != '\n':
                 data = _append_single_line(data, line, delimiter, dtype, cols)
 
-    #if remove_spaces:
-        #for col in data:
-            #if type(col[0]) == str:
+    # remove leading and trailing spaces
+    if remove_spaces:
+        for i in xrange(len(data)):
+            if isinstance(data[i][0], basestring):
+                data[i] = char.strip(data[i], ' ')
+                data[i] = char.rstrip(data[i], ' ')
 
-    # if only one line is printed, don't want many arrays of length one but
-    # one single array (if force_array is set to False)
+    # if only one line is printed, don't want many arrays of length one
+    # but one single array (if force_array is set to False)
     if not force_array:
         if len(data) > 1:
             if hasattr(data[0], '__iter__'):
