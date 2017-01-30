@@ -8,11 +8,11 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
          delimiter='', removechar='#', hmode='1', linenum=1,
          hsep='', lower=False):
     """
-    Creates a dictionary in which each chosen column in the file is an element
-    of the dictionary, where keys correspond to column names.
+    Creates a dictionary in which each chosen column in the file is an
+    element of the dictionary, where keys correspond to column names.
 
-    Uses the functions header and table to create a dictionary with the columns
-    of the file (see each function's help).
+    Uses the functions header and table to create a dictionary with the
+    columns of the file (see each function's help).
 
     The file must have a header in which all column names are given.
 
@@ -47,63 +47,70 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
 def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
            hsep='', lower=False, remove_spaces=True, full_output=False):
     """
-    Returns the header of the file, which can be defined in various ways.
+    Returns the header of the file, which can be defined in various
+    ways.
 
     Parameters
     ----------
     filename : str
-        Name of the file
-    cols : int/str or list of int/str's (default None, which takes all columns)
-        Columns wanted in the output, either by number or by name (numbered
-        starting at 0).
+        Name of the file.
+    cols : int/str or list of int/str
+        Columns wanted in the output, either by number or by name
+        (numbered starting at 0). If not specified, all columns will be
+        returned.
     removechar : str
-        Character(s) to be removed from the first line, not part of the header.
-        If *hmode='1'* and *linenum=0* then the header will be the first line
-        in the file starting with *removechar*. If *hmode='2'* then all lines
-        starting with *removechar* will be considered part of the header.
+        Character(s) to be removed from the first line, not part of
+        the header. If `hmode='1'` and `linenum=0` then the header will
+        be the first line in the file starting with `removechar`. If
+        `hmode='2'` then all lines starting with `removechar` will be
+        considered part of the header.
     hmode : {'1', '2'}
-        How the header is defined. mode '1' means column names are given in
-        the first line, separated by spaces; mode '2' means they are given in
-        separate lines at the top of the file with column numbers, as in
-        SExtractor outputs. Note that the latter headers usually enumerate the
-        columns starting from 1, which is corrected here to the python
-        convention. See below for further explanation.
+        How the header is defined. `hmode='1'` means column names are
+        given in the first line, separated by spaces; `hmode='2'` means
+        they are given in separate lines at the top of the file with
+        column numbers, as in SExtractor outputs. Note that the latter
+        headers usually enumerate the columns starting from 1, which is
+        corrected here to the python convention. See below for further
+        explanation.
     linenum : int
-        The line number in which the header is located (count starts at 1). If
-        *linenum=0* and *hmode='1'*, the header is assumed to be the first
-        line starting with *removechar*. If *hmode=='2'*, then this is used as
-        the column number containing the names of the data columns.
+        The line number in which the header is located (count starts at
+        1). If `linenum=0` and `hmode='1'`, the header is assumed to be
+        the first line starting with `removechar`. If `hmode=='2'`,
+        then this is used as the column number containing the names of
+        the data columns.
     hsep : char
         Separator between column names. Typically <space> (default) or
-        <comma>. Used only in *mode=1*.
+        <comma>. Used only in `hmode=1`.
     lower: boole
-        whether to return all column names in lower case
+        whether to return all column names in lower case.
     remove_spaces : bool
-        If True, remove leading and trailing spaces from all string elements.
+        If `True`, remove leading and trailing spaces from all string
+        elements.
     full_output: bool
-        if True, return the column numbers as well. Useful when the columns
-        are defined from their names.
+        if `True`, return the column numbers as well. Useful when the
+        columns are defined from their names.
 
     Returns
     -------
     header : a list or numpy.ndarray with the desired column names
 
 
-    THE *hmode* PARAMETER
+    THE `hmode` PARAMETER
     --------------------
 
         Definitions
         -----------
-            hmode=1
-        Single-line header given in line number *linenum*. The header line may
-        start with any comment character which is specified in *removechar*.
-        Column names are separated by *sep*. If *linenum=0*, the header will
-        be assumed to be the first line starting with *removechar*.
-            hmode=2
+            `hmode=1`
+        Single-line header given in line number `linenum`. The header
+        line may start with any comment character which is specified in
+        `removechar`. Column names are separated by `hsep`. If
+        starting with `removechar`. `linenum=0`, the header will be
+        assumed to be the first line.
+            `hmode=2`
         Column names are given in separate lines with explanations, each of
-        which starts with a '#', similar to the display of a FITS file header.
+        which starts with a `'#'`, similar to the display of a FITS file header.
         Used, for instance, by SExtractor.
-            hmode=3
+            `hmode=3`
         ApJ table format. File header contains a "byte-by-byte" description
         of the columns. No hashtags need to be present, but readfile can
         handle them if they are. NOT YET IMPLEMENTED
@@ -118,14 +125,14 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             | ID | RA | Dec | redshift | mag_r |
 
         hmode=2, linenum=
-        # 1   ID                            Unique object identification
-        # 2   RA                            J2000 Right Ascension (deg)
-        # 3   Dec                           J2000 Declination (deg)
-        # 4   redshift                      Object redshift
-        # 5   mag_r                         Aperture magnitude in the r band
-                                            (mag)
+        # 1   ID                Unique object identification
+        # 2   RA                J2000 Right Ascension (deg)
+        # 3   Dec               J2000 Declination (deg)
+        # 4   redshift          Object redshift
+        # 5   mag_r             Aperture magnitude in the r band (mag)
 
         hmode=3
+        ...
 
 
     NOTES
@@ -200,7 +207,6 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
                 colnums = array([name.index(i)
                                        for i in cols if i in name])
             else:
-                #head = [name[i] for i, n in enumerate(num) if n-1 in cols]
                 head = [name_i for name_i, num_i in izip(name, num)
                         if num_i-1 in cols]
             head = array(head, dtype=str)
@@ -234,7 +240,7 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
         Name of the output file
     data : 2-d array
     fmt : string of space-separated formats (a la Python 2.x), or list
-    header : str (optional)
+    header : str
     overwrite : `bool`
         Whether to overwrite the file if it exists
     append : bool
@@ -282,53 +288,57 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
 
 
 def table(filename, cols=None, dtype=float, exclude='#', include=None,
-          delimiter='', whole=False, force_array=False, remove_spaces=True):
+          skip=0, delimiter='', whole=False, force_array=False,
+          remove_spaces=True):
     """
-    Returns a table with all the data in a file. Each column is returned as a
-    numpy array.
+    Returns a table with all the data in a file. Each column is
+    returned as a numpy array.
 
     Parameters
     ----------
     filename : str
         Name of the file
-    cols : int or list of ints (default None, which takes all columns)
-        Columns wanted in the output (numbered starting at 0). If the file has
-        columns that do not have data in one or more rows, only columns before
-        those can be included.
-    dtype : type or list of types (default float)
-        A generic type for all columns or a type for each of the columns in
-        *cols*. If *dtype* is a list of types, then it must be of the same
-        length of *cols*, or its length equal to the number of columns in the
-        file if cols==None. If a character cannot be converted to the desired
-        type, the elements in the corresponding column will be strings.
-    exclude : str or list of strings (default '#')
-        Comment character(s), of any length. Lines starting with (any of the
-        elements of) *exclude* are not considered for the table.
-    include : str or list of strings (default None)
-        Lines to be included in the table must start with (any of the elements
-        of) *include*, (each of which) can be of any length. If given, it
-        overrides *exclude*. Cannot have any spaces, and leading spaces in
-        the file are ignored.
-    delimiter : str (default ' ')
+    cols : int or list of ints
+        Columns wanted in the output (numbered starting at 0). If the
+        file has columns that do not have data in one or more rows,
+        only columns before those can be included.
+    dtype : type or list of types
+        A generic type for all columns or a type for each of the
+        columns in `cols`. If `dtype` is a list of types, then it must
+        be of the same length of `cols`, or its length equal to the
+        number of columns in the file if `cols=None`. If a character
+        cannot be converted to the desired type, the elements in the
+        corresponding column will be strings.
+    exclude : str or list of strings
+        Comment character(s), of any length. Lines starting with (any
+        of the elements of) `exclude` are not considered for the table.
+    include : str or list of strings
+        Lines to be included in the table must start with (any of the
+        elements of) `include`, (each of which) can be of any length.
+        If given, `include` overrides `exclude`. It cannot have any
+        spaces, and leading spaces in the file are ignored.
+    skip : int (default 0)
+        Number of lines to skip before starting to read data. Note that
+        excluded lines are not counted. Ignored if `include` is
+        defined.
+    delimiter : str
         Separator beween lines. Can be a string of any length.
     whole : boolean (default False) -- NOT YET IMPLEMENTED
-        If True, the string or strings given in *include* or *exclude* are
-        taken into account only if they are a full string, i.e., there is a
-        *delimiter* character right after it.
-    force_array : bool (default False)
-        If True, each column is returned as an array even if the length of the
-        column or row is one. This is useful if you are automatically dealing
-        with arrays; by setting this, you always get the same format. By
-        default, when each column or row has length 1, table() returns a
-        single array with all the selected elements of the row/column.
-    remove_spaces : bool (default True)
-        If True, remove leading and trailing spaces from all string elements.
-        NOT YET IMPLEMENTED.
+        If `True`, the string or strings given in `include` or `exclude`
+        are taken into account only if they are a full string, i.e.,
+        there is a `delimiter` character right after it.
+    force_array : bool
+        If `True`, each column is returned as an array even if the
+        length of the column or row is one. This is useful if you are
+        automatically dealing with arrays; by setting this, you always
+        get the same format. By default, when each column or row has
+        length 1, `table()` returns a single array with all the
+        selected elements of the row/column.
 
     Returns
     -------
-    data : a list containing the selected columns in the file, each with the
-        specified type. If dtype=all, a numpy array will be returned
+    data : a list containing the selected columns in the file, each
+        with the specified type.
 
     """
     if isinstance(cols, int) or isinstance(cols, basestring):
@@ -351,21 +361,18 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     elif exclude:
         if isinstance(include, basestring):
             exclude = [exclude]
-        for line in file:
+        for i, line in enumerate(file):
             add = True
-            #print line
             for e in exclude:
-                #print e, line[:len(e)]
                 if line[:len(e)] == e or line.replace(' ', '') == '\n':
                     add = False
                     break
-                #print 'appending!'
-            if add:
+            if add and i >= skip:
                 data = _append_single_line(data, line, delimiter,
                                            dtype, cols)
     else:
-        for line in file:
-            if line.replace(' ', '') != '\n':
+        for i, line in enumerate(file):
+            if line.replace(' ', '') != '\n' and i >= skip:
                 data = _append_single_line(data, line, delimiter, dtype, cols)
 
     # remove leading and trailing spaces
@@ -468,7 +475,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
 
     Appends a single line to a table. Devised to iteratively make a table from
     a file. Can give a specified type to each field in the line (specified by
-    "dtype").
+    `dtype`).
 
     """
     N = len(table)
