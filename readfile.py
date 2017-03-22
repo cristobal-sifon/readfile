@@ -288,7 +288,7 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
 
 
 def table(filename, cols=None, dtype=float, exclude='#', include=None,
-          skip=0, delimiter='', whole=False, force_array=False,
+          skip=0, delimiter=None, whole=False, force_array=False,
           remove_spaces=True):
     """
     Returns a table with all the data in a file. Each column is
@@ -298,6 +298,9 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     ----------
     filename : str
         Name of the file
+
+    Optional parameters
+    -------------------
     cols : int or list of ints
         Columns wanted in the output (numbered starting at 0). If the
         file has columns that do not have data in one or more rows,
@@ -317,13 +320,13 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         elements of) `include`, (each of which) can be of any length.
         If given, `include` overrides `exclude`. It cannot have any
         spaces, and leading spaces in the file are ignored.
-    skip : int (default 0)
+    skip : int
         Number of lines to skip before starting to read data. Note that
         excluded lines are not counted. Ignored if `include` is
         defined.
     delimiter : str
         Separator beween lines. Can be a string of any length.
-    whole : boolean (default False) -- NOT YET IMPLEMENTED
+    whole : bool
         If `True`, the string or strings given in `include` or `exclude`
         are taken into account only if they are a full string, i.e.,
         there is a `delimiter` character right after it.
@@ -354,25 +357,38 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         if isinstance(include, basestring):
             include = [include]
         for line in file:
+            if len(line.split()) == 0:
+                continue
+            if whole:
+                first = line.split(delimiter)[0]
             for i in include:
-                if line.replace(' ', '')[:len(i)] == i:
-                    data = _append_single_line(data, line, delimiter,
-                                               dtype, cols)
+                if not whole:
+                    first = line.replace(' ', '')[:len(i)]
+                if first != i:
+                    continue
+                data = _append_single_line(
+                    data, line, delimiter, dtype, cols)
     elif exclude:
         if isinstance(include, basestring):
             exclude = [exclude]
         for i, line in enumerate(file):
+            if len(line.split()) == 0:
+                continue
             add = True
+            if whole:
+                first = line.split(delimiter)[0]
             for e in exclude:
-                if line[:len(e)] == e or line.replace(' ', '') == '\n':
+                if not whole:
+                    first = line.replace(' ', '')[:len(e)]
+                if first == e:
                     add = False
                     break
             if add and i >= skip:
-                data = _append_single_line(data, line, delimiter,
-                                           dtype, cols)
+                data = _append_single_line(
+                    data, line, delimiter, dtype, cols)
     else:
         for i, line in enumerate(file):
-            if line.replace(' ', '') != '\n' and i >= skip:
+            if len(line.split()) > 0 and i >= skip:
                 data = _append_single_line(data, line, delimiter, dtype, cols)
 
     # remove leading and trailing spaces
