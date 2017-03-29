@@ -13,21 +13,6 @@ except ImportError: # Python 3.x
     basestring = str
 
 
-def format_fmt(fmt, delimiter, ncols=1):
-    nitems = fmt.count('%')
-    # assume that if there ar no '%' then the format is in python3 format
-    if nitems == 0:
-        return fmt
-    if isinstance(fmt, basestring):
-        fmt = fmt.split()
-    if len(fmt) == 1 and ncols > 1:
-        fmt = fmt[0].replace('%', '')
-        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in range(ncols)]
-    else:
-        fmt3 = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
-                for i in enumerate(fmt)]
-    return delimiter.join(fmt3)
-
 def dict(filename, cols=None, dtype=float, include=None, exclude='#',
          delimiter='', removechar='#', hmode='1', linenum=1,
          hsep='', lower=False):
@@ -66,6 +51,58 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
         for i in range(1, len(head)):
             dic[head[i]] = data[i]
     return dic
+
+
+def format_fmt(fmt, delimiter, n=1):
+    """
+    Give a formatting string the correct Python 3.x-style format, and
+    prepare it to be ready to use by save()
+
+    Parameters
+    ----------
+        fmt     : str or list of str
+                  Original format string, which may be in either Python
+                  2 or 3 format, and may be a single format string, or
+                  multiple space-separated format strings, or a list of
+                  format strings.
+        delimiter : str
+                  String to use as delimiter in the string to which
+                  this format will be applied.
+
+    Optional parameters
+    -------------------
+        n       : int
+                  if `fmt` is a single format string, then `fmt` will
+                  be repeated `n` times (changing the index to follow
+                  Python 3 syntax).
+
+    Returns
+    -------
+        fmt3    : str
+                  The final format string, separated by `delimiter`,
+                  which can be directly applied to the corresponding
+                  list of elements
+
+    Examples
+    --------
+        # multiple formats
+        >>>
+
+    """
+    if isinstance(fmt, basestring):
+        fmt = fmt.split()
+    # is it Python 2 or 3 style?
+    style = '2' if '%' in fmt[0] else '3'
+    # if it comes in Python2 style
+    if style == '2' and len(fmt) == 1:
+        fmt = fmt[0].replace('%', '')
+        fmt = ['{{{0}:{1}}}'.format(i, fmt) for i in range(ncols)]
+    elif style == '2':
+        fmt = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
+               for i in enumerate(fmt)]
+    # if it comes in Python3 style
+    #else:
+    return delimiter.join(fmt)
 
 
 def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
@@ -292,7 +329,7 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
         out = open(output, 'a')
     else:
         out = open(output, 'w')
-    fmt = format_fmt(fmt, delimiter, ncols=ncols)
+    fmt = format_fmt(fmt, delimiter, n=ncols)
     # save file! start with the header
     if len(header) > 0:
         #print >>out, header
