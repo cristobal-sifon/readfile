@@ -61,10 +61,10 @@ def format_fmt(fmt, delimiter, n=1):
     Parameters
     ----------
         fmt     : str or list of str
-                  Original format string, which may be in either Python
-                  2 or 3 format, and may be a single format string, or
-                  multiple space-separated format strings, or a list of
-                  format strings.
+                  Original format string in Python 2 format, which may
+                  be a single format string, or multiple space-
+                  separated format strings, or a list of format
+                  strings.
         delimiter : str
                   String to use as delimiter in the string to which
                   this format will be applied.
@@ -79,14 +79,18 @@ def format_fmt(fmt, delimiter, n=1):
     Returns
     -------
         fmt3    : str
-                  The final format string, separated by `delimiter`,
-                  which can be directly applied to the corresponding
-                  list of elements
+                  The final format string, in Python 3 style, separated
+                  by `delimiter`, which can be directly applied to the
+                  corresponding list of elements.
 
     Examples
     --------
         # multiple formats
-        >>>
+        >>> format_fmt('%s %4.1f', ' | ')
+        '{0:s} | {1:4.1f}'
+        # single format with repetition
+        >>> format_fmt('%.3e', ' ', n=3)
+        '{0:.3e} {1:.3e} {2:.3e}'
 
     """
     if isinstance(fmt, basestring):
@@ -96,13 +100,13 @@ def format_fmt(fmt, delimiter, n=1):
     # if it comes in Python2 style
     if style == '2' and len(fmt) == 1:
         fmt = fmt[0].replace('%', '')
-        fmt = ['{{{0}:{1}}}'.format(i, fmt) for i in range(ncols)]
+        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in range(n)]
     elif style == '2':
-        fmt = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
-               for i in enumerate(fmt)]
+        fmt3 = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
+                for i in enumerate(fmt)]
     # if it comes in Python3 style
     #else:
-    return delimiter.join(fmt)
+    return delimiter.join(fmt3)
 
 
 def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
