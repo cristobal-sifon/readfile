@@ -332,11 +332,9 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
     fmt = format_fmt(fmt, delimiter, n=ncols)
     # save file! start with the header
     if len(header) > 0:
-        #print >>out, header
         print(header, file=out)
     for i in zip(*data):
-        #print >>out, fmt %i
-        print(fmt.format(i), file=out)
+        print(fmt.format(*i), file=out)
     out.close()
     if verbose:
         print('Saved file {0}'.format(output))
