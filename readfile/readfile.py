@@ -1,15 +1,17 @@
 from __future__ import print_function
 
+import sys
 from itertools import count
 from numpy import array, char, ndarray
 from os.path import isfile
 
-# Python 2/3 compatibility issues
-try: # Python 2.x
-    from itertools import izip as zip
-    range = xrange
-except ImportError: # Python 3.x
+# Python 2/3 compatibility
+if sys.version_info[0] == 2:
+    from itertools import izip
+else:
     basestring = str
+    izip = zip
+    xrange = range
 
 
 def dict(filename, cols=None, dtype=float, include=None, exclude='#',
@@ -43,11 +45,11 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
             dic = {head[0]: data}
         else:
             dic = {head[0]: data[0]}
-            for i in range(1, len(head)):
+            for i in xrange(1, len(head)):
                 dic[head[i]] = data[i]
     else:
         dic = {head[0]: data[0]}
-        for i in range(1, len(head)):
+        for i in xrange(1, len(head)):
             dic[head[i]] = data[i]
     return dic
 
@@ -99,7 +101,7 @@ def format_fmt(fmt, delimiter, n=1):
     # if it comes in Python2 style
     if style == '2' and len(fmt) == 1:
         fmt = fmt[0].replace('%', '')
-        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in range(n)]
+        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in xrange(n)]
     elif style == '2':
         fmt3 = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
                 for i in enumerate(fmt)]
@@ -228,7 +230,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
     if hmode == '1':
         file = open(filename)
         if linenum > 0:
-            for i in range(linenum-1):
+            for i in xrange(linenum-1):
                 head = file.readline()
         head = file.readline().strip()
         if removechar:
@@ -257,7 +259,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             exit()
         data = table(filename, cols=2, dtype=str, include=removechar)
         # column numbers
-        num  = range(len(data))
+        num  = xrange(len(data))
         # column names
         name = list(data)
         if cols is None:
@@ -269,7 +271,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
                 colnums = array([name.index(i)
                                        for i in cols if i in name])
             else:
-                head = [name_i for name_i, num_i in zip(name, num)
+                head = [name_i for name_i, num_i in izip(name, num)
                         if num_i-1 in cols]
             head = array(head, dtype=str)
 
@@ -335,7 +337,7 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
     # save file! start with the header
     if len(header) > 0:
         print(header, file=out)
-    for i in zip(*data):
+    for i in izip(*data):
         print(fmt.format(*i), file=out)
     out.close()
     if verbose:
@@ -449,7 +451,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
 
     # remove leading and trailing spaces
     if remove_spaces:
-        for i in range(len(data)):
+        for i in xrange(len(data)):
             if isinstance(data[i][0], basestring):
                 data[i] = char.strip(data[i], ' ')
                 data[i] = char.rstrip(data[i], ' ')
@@ -477,7 +479,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                             except ValueError:
                                 table.append(i[0])
                     else:
-                        for i, tp in zip(data, dtype):
+                        for i, tp in izip(data, dtype):
                             try:
                                 table.append(tp(i[0]))
                             except ValueError:
@@ -503,7 +505,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     # many columns, many rows
     table = []
     if not isinstance(dtype, type):
-        for tp, row in zip(dtype, data):
+        for tp, row in izip(dtype, data):
             try:
                 try:
                     table.append(array(row, dtype=tp))
@@ -560,7 +562,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
     if not isinstance(dtype, type):
         if cols is None:
             if len(dtype) == len(line):
-                for i, dt, col in zip(count(), dtype, line):
+                for i, dt, col in izip(count(), dtype, line):
                     try:
                         table[i].append(dt(col))
                     except IndexError:
@@ -571,7 +573,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
                 msg += ' (dtype:{0}; line:{1})'.format(len(dtype), len(line))
                 raise IndexError(msg)
         elif len(dtype) == len(cols):
-            for i, dt, col in zip(count(), dtype, cols):
+            for i, dt, col in izip(count(), dtype, cols):
                 table[i].append(dt(line[col]))
             return table
         else:
