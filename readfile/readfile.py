@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from __future__ import print_function
 
 from itertools import count
@@ -105,7 +104,6 @@ def format_fmt(fmt, delimiter, n=1):
         fmt3 = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
                 for i in enumerate(fmt)]
     # if it comes in Python3 style
-    #else:
     return delimiter.join(fmt3)
 
 
@@ -177,7 +175,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         Used, for instance, by SExtractor.
             `hmode=3`
         ApJ table format. File header contains a "byte-by-byte" description
-        of the columns. No hashtags need to be present, but readfile can
+        of the columns. No hcashtags need to be present, but readfile can
         handle them if they are. NOT YET IMPLEMENTED
 
         Examples
@@ -189,7 +187,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             removechar = '|' , sep = '|' :
             | ID | RA | Dec | redshift | mag_r |
 
-        hmode=2, linenum=
+        hmode=2
         # 1   ID                Unique object identification
         # 2   RA                J2000 Right Ascension (deg)
         # 3   Dec               J2000 Declination (deg)
@@ -257,7 +255,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             msg = "ERROR: when setting hmode='2' must include removechar"
             print(msg)
             exit()
-        data = table(filename, cols=linenum, dtype=str, include=removechar)
+        data = table(filename, cols=2, dtype=str, include=removechar)
         # column numbers
         num  = range(len(data))
         # column names
@@ -504,7 +502,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                 return array(data, dtype=str)
     # many columns, many rows
     table = []
-    if hasattr(dtype, '__iter__'):
+    if not isinstance(dtype, type):
         for tp, row in zip(dtype, data):
             try:
                 try:
@@ -559,7 +557,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
         line = line.split()
     else:
         line = line.replace('\n', '').split(delimiter)
-    if hasattr(dtype, '__iter__'):
+    if not isinstance(dtype, type):
         if cols is None:
             if len(dtype) == len(line):
                 for i, dt, col in zip(count(), dtype, line):

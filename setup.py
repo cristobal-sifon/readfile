@@ -1,6 +1,8 @@
+import os
 import re
 from setuptools import setup
 
+_here = os.path.abspath(os.path.dirname(__file__))
 
 #Taken from the Python docs:
 #Utility function to read the README file.
@@ -8,7 +10,7 @@ from setuptools import setup
 #top level README file and 2) it's easier to type in the README file
 #than to put a raw string in below
 def read(fname):
-    return open(os.path.join(here, fname)).read()
+    return open(os.path.join(_here, fname)).read()
 
 
 #this function copied from pip's setup.py
@@ -24,11 +26,15 @@ def find_version(fname):
     raise RuntimeError("Unable to find version string.")
 
 
-setup(name='readfile',
-      version=find_version('__init__.py'),
-      description='A flexible module to read ascii files',
-      author='Cristobal Sifon',
-      author_email='sifon@astro.princeton.edu',
-      url='https://github.com/cristobal-sifon/readfile',
-      modules=['readfile'],
-      install_requires=['numpy>=1.5.0'])
+setup(
+    name='readfile',
+    version=find_version('readfile/__init__.py'),
+    description='A flexible module to read ascii files',
+    author='Cristobal Sifon',
+    author_email='sifon@astro.princeton.edu',
+    long_description=read('README.md'),
+    url='https://github.com/cristobal-sifon/readfile',
+    packages=['readfile'],
+    install_requires=['numpy>=1.5.0'],
+    zip_safe=False
+    )
