@@ -1,11 +1,15 @@
+from __future__ import absolute_import, print_function
+
 import os
 import re
 from setuptools import setup
 
-from setup_helpers import find_version, read
-
-
-_here = os.path.abspath(os.path.dirname(__file__))
+try:
+    from myhelpers.setup_helpers import find_location, find_version, read
+except ImportError as err:
+    print('{0}\nYou may download setup_helpers from'.format(err),
+          'https://github.com/cristobal-sifon/myhelpers')
+    sys.exit()
 
 
 setup(
@@ -14,7 +18,7 @@ setup(
     description='A flexible module to read ascii files',
     author='Cristobal Sifon',
     author_email='sifon@astro.princeton.edu',
-    long_description=read(os.path.join(_here, 'README.md')),
+    long_description=read(os.path.join(find_location(__file__), 'README.md')),
     url='https://github.com/cristobal-sifon/readfile',
     packages=['readfile'],
     install_requires=['numpy>=1.5.0'],
