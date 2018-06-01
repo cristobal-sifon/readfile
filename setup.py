@@ -7,6 +7,7 @@ from setuptools import setup
 try:
     from myhelpers.setup_helpers import find_location, find_version, read
 except ImportError as err:
+    import sys
     print('{0}\nYou may download setup_helpers from'.format(err),
           'https://github.com/cristobal-sifon/myhelpers')
     sys.exit()
