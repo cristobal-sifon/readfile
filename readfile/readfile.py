@@ -1,22 +1,20 @@
 from __future__ import print_function
 
-import sys
 from itertools import count
 from numpy import array, char, ndarray
 from os.path import isfile
+from six import string_types
+import sys
 
 # Python 2/3 compatibility
 if sys.version_info[0] == 2:
-    from itertools import izip
-else:
-    basestring = str
-    izip = zip
-    xrange = range
+    from itertools import izip as zip
+    range = xrange
 
 
 def dict(filename, cols=None, dtype=float, include=None, exclude='#',
-         delimiter='', removechar='#', hmode='1', linenum=1,
-         hsep='', lower=False):
+         delimiter='', removechar='#', hmode='1', header_start=1,
+         data_start=0, hsep='', lower=False):
     """
     Creates a dictionary in which each chosen column in the file is an
     element of the dictionary, where keys correspond to column names.
@@ -27,29 +25,29 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
     The file must have a header in which all column names are given.
 
     """
-    if isinstance(cols, basestring) or isinstance(cols, int):
+    if isinstance(cols, string_types) or isinstance(cols, int):
         cols = (cols,)
     full_output = False
     if cols is not None:
-        if isinstance(cols[0], basestring):
+        if isinstance(cols[0], string_types):
             full_output = True
-    head = header(filename, cols=cols, removechar=removechar,
-                    hmode=hmode, linenum=linenum, hsep=hsep, lower=lower,
-                    full_output=full_output)
+    head = header(filename, cols=cols, removechar=removechar, hmode=hmode,
+                  header_start=header_start, hsep=hsep, lower=lower,
+                  full_output=full_output)
     if full_output:
         head, cols = head
     data = table(filename, cols=cols, dtype=dtype, include=include,
-                 exclude=exclude, delimiter=delimiter)
+                 exclude=exclude, data_start=data_start, delimiter=delimiter)
     if type(data) == ndarray:
         if len(data.shape) == 1:
             dic = {head[0]: data}
         else:
             dic = {head[0]: data[0]}
-            for i in xrange(1, len(head)):
+            for i in range(1, len(head)):
                 dic[head[i]] = data[i]
     else:
         dic = {head[0]: data[0]}
-        for i in xrange(1, len(head)):
+        for i in range(1, len(head)):
             dic[head[i]] = data[i]
     return dic
 
@@ -94,14 +92,14 @@ def format_fmt(fmt, delimiter, n=1):
         '{0:.3e} {1:.3e} {2:.3e}'
 
     """
-    if isinstance(fmt, basestring):
+    if isinstance(fmt, string_types):
         fmt = fmt.split()
     # is it Python 2 or 3 style?
     style = '2' if '%' in fmt[0] else '3'
     # if it comes in Python2 style
     if style == '2' and len(fmt) == 1:
         fmt = fmt[0].replace('%', '')
-        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in xrange(n)]
+        fmt3 = ['{{{0}:{1}}}'.format(i, fmt) for i in range(n)]
     elif style == '2':
         fmt3 = ['{{{0}:{1}}}'.format(i[0], i[1].replace('%', ''))
                 for i in enumerate(fmt)]
@@ -109,8 +107,8 @@ def format_fmt(fmt, delimiter, n=1):
     return delimiter.join(fmt3)
 
 
-def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
-           hsep='', lower=False, remove_spaces=True, full_output=False):
+def header(filename, cols=None, removechar='#', hmode='1', header_start=0,
+           hsep='', lower=False, strip=True, full_output=False):
     """
     Returns the header of the file, which can be defined in various
     ways.
@@ -125,7 +123,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         returned.
     removechar : str
         Character(s) to be removed from the first line, not part of
-        the header. If `hmode='1'` and `linenum=0` then the header will
+        the header. If `hmode='1'` and `header_start=0` then the header will
         be the first line in the file starting with `removechar`. If
         `hmode='2'` then all lines starting with `removechar` will be
         considered part of the header.
@@ -137,9 +135,9 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         headers usually enumerate the columns starting from 1, which is
         corrected here to the python convention. See below for further
         explanation.
-    linenum : int
+    header_start : int
         The line number in which the header is located (count starts at
-        1). If `linenum=0` and `hmode='1'`, the header is assumed to be
+        0). If `header_start=0` and `hmode='1'`, the header is assumed to be
         the first line starting with `removechar`. If `hmode=='2'`,
         then this is used as the column number containing the names of
         the data columns.
@@ -148,7 +146,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         <comma>. Used only in `hmode=1`.
     lower: boole
         whether to return all column names in lower case.
-    remove_spaces : bool
+    strip : bool
         If `True`, remove leading and trailing spaces from all string
         elements.
     full_output: bool
@@ -166,10 +164,10 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         Definitions
         -----------
             `hmode=1`
-        Single-line header given in line number `linenum`. The header
+        Single-line header given in line number `header_start`. The header
         line may start with any comment character which is specified in
         `removechar`. Column names are separated by `hsep`. If
-        starting with `removechar`. `linenum=0`, the header will be
+        starting with `removechar`. `header_start=0`, the header will be
         assumed to be the first line.
             `hmode=2`
         Column names are given in separate lines with explanations, each of
@@ -206,12 +204,12 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         All leading and trailing spaces are removed from column names.
 
     """
-    if isinstance(cols, int) or isinstance(cols, basestring):
+    if isinstance(cols, int) or isinstance(cols, string_types):
         cols = [cols]
 
     if cols is not None:
         tp = type(cols[0])
-        cols_items_are_str = isinstance(cols[0], basestring)
+        cols_items_are_str = isinstance(cols[0], string_types)
         cols_items_are_int = isinstance(cols[0], int)
         if not (cols_items_are_int or cols_items_are_str):
             raise TypeError('wrong type in cols, must be either str or int')
@@ -222,15 +220,15 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         if cols_items_are_str:
             colnums = []
     if removechar not in (False, None):
-        if not isinstance(removechar, basestring):
+        if not isinstance(removechar, string_types):
             raise TypeError('wrong type for removechar, should be a string')
 
     head = []
     # horizontal header
     if hmode == '1':
         file = open(filename)
-        if linenum > 0:
-            for i in xrange(linenum-1):
+        if header_start > 0:
+            for i in range(header_start-1):
                 head = file.readline()
         head = file.readline().strip()
         if removechar:
@@ -259,7 +257,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
             exit()
         data = table(filename, cols=2, dtype=str, include=removechar)
         # column numbers
-        num  = xrange(len(data))
+        num  = range(len(data))
         # column names
         name = list(data)
         if cols is None:
@@ -271,7 +269,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
                 colnums = array([name.index(i)
                                        for i in cols if i in name])
             else:
-                head = [name_i for name_i, num_i in izip(name, num)
+                head = [name_i for name_i, num_i in zip(name, num)
                         if num_i-1 in cols]
             head = array(head, dtype=str)
 
@@ -279,7 +277,7 @@ def header(filename, cols=None, removechar='#', hmode='1', linenum=0,
         head = array([h.lower() for h in head])
 
     # remove leading and trailing spaces from each column name
-    if remove_spaces:
+    if strip:
         for i, h in enumerate(head):
             if len(h) == 0:
                 continue
@@ -337,7 +335,7 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
     # save file! start with the header
     if len(header) > 0:
         print(header, file=out)
-    for i in izip(*data):
+    for i in zip(*data):
         print(fmt.format(*i), file=out)
     out.close()
     if verbose:
@@ -346,8 +344,8 @@ def save(output, data, delimiter='  ', fmt='%s', header='', overwrite=True,
 
 
 def table(filename, cols=None, dtype=float, exclude='#', include=None,
-          skip=0, delimiter=None, whole=False, force_array=False,
-          remove_spaces=True):
+          data_start=0, delimiter=None, whole=False, force_array=False,
+          strip=True):
     """
     Returns a table with all the data in a file. Each column is
     returned as a numpy array.
@@ -378,10 +376,10 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         elements of) `include`, (each of which) can be of any length.
         If given, `include` overrides `exclude`. It cannot have any
         spaces, and leading spaces in the file are ignored.
-    skip : int
-        Number of lines to skip before starting to read data. Note that
-        excluded lines are not counted. Ignored if `include` is
-        defined.
+    data_start : int
+        line number at which to start recording data. Note that
+        commented lines are counted but excluded lines are not. Ignored
+        if `include` is defined.
     delimiter : str
         Separator beween lines. Can be a string of any length.
     whole : bool
@@ -402,7 +400,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
         with the specified type.
 
     """
-    if isinstance(cols, int) or isinstance(cols, basestring):
+    if isinstance(cols, int) or isinstance(cols, string_types):
         cols = [cols]
 
     if cols is None:
@@ -412,7 +410,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
 
     file = open(filename)
     if include:
-        if isinstance(include, basestring):
+        if isinstance(include, string_types):
             include = [include]
         for line in file:
             if len(line.split()) == 0:
@@ -427,7 +425,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                 data = _append_single_line(
                     data, line, delimiter, dtype, cols)
     elif exclude:
-        if isinstance(include, basestring):
+        if isinstance(include, string_types):
             exclude = [exclude]
         for i, line in enumerate(file):
             if len(line.split()) == 0:
@@ -441,18 +439,18 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                 if first == e:
                     add = False
                     break
-            if add and i >= skip:
+            if add and i >= data_start:
                 data = _append_single_line(
                     data, line, delimiter, dtype, cols)
     else:
         for i, line in enumerate(file):
-            if len(line.split()) > 0 and i >= skip:
+            if len(line.split()) > 0 and i >= data_start:
                 data = _append_single_line(data, line, delimiter, dtype, cols)
 
     # remove leading and trailing spaces
-    if remove_spaces:
-        for i in xrange(len(data)):
-            if isinstance(data[i][0], basestring):
+    if strip:
+        for i in range(len(data)):
+            if isinstance(data[i][0], string_types):
                 data[i] = char.strip(data[i], ' ')
                 data[i] = char.rstrip(data[i], ' ')
 
@@ -479,7 +477,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
                             except ValueError:
                                 table.append(i[0])
                     else:
-                        for i, tp in izip(data, dtype):
+                        for i, tp in zip(data, dtype):
                             try:
                                 table.append(tp(i[0]))
                             except ValueError:
@@ -505,7 +503,7 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     # many columns, many rows
     table = []
     if not isinstance(dtype, type):
-        for tp, row in izip(dtype, data):
+        for tp, row in zip(dtype, data):
             try:
                 try:
                     table.append(array(row, dtype=tp))
@@ -562,7 +560,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
     if not isinstance(dtype, type):
         if cols is None:
             if len(dtype) == len(line):
-                for i, dt, col in izip(count(), dtype, line):
+                for i, dt, col in zip(count(), dtype, line):
                     try:
                         table[i].append(dt(col))
                     except IndexError:
@@ -573,7 +571,7 @@ def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
                 msg += ' (dtype:{0}; line:{1})'.format(len(dtype), len(line))
                 raise IndexError(msg)
         elif len(dtype) == len(cols):
-            for i, dt, col in izip(count(), dtype, cols):
+            for i, dt, col in zip(count(), dtype, cols):
                 table[i].append(dt(line[col]))
             return table
         else:

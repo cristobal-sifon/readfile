@@ -10,4 +10,4 @@ from .readfile import *
 __all__ = ('dict', 'format_fmt', 'header', 'table', 'save',
            '_append_single_line')
 __author__ = 'Cristobal Sifon'
-__version__ = '2.1.1'
+__version__ = '2.1.2'
