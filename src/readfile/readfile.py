@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-from itertools import count
-from numpy import array, char, ndarray
+import numpy as np
+from numpy import char
 from os.path import isfile
 from six import string_types
 import sys
@@ -38,7 +38,7 @@ def dict(filename, cols=None, dtype=float, include=None, exclude='#',
         head, cols = head
     data = table(filename, cols=cols, dtype=dtype, include=include,
                  exclude=exclude, data_start=data_start, delimiter=delimiter)
-    if type(data) == ndarray:
+    if isinstance(data, np.ndarray):
         if len(data.shape) == 1:
             dic = {head[0]: data}
         else:
@@ -212,7 +212,8 @@ def header(filename, cols=None, removechar='#', hmode='1', header_start=0,
         cols_items_are_str = isinstance(cols[0], string_types)
         cols_items_are_int = isinstance(cols[0], int)
         if not (cols_items_are_int or cols_items_are_str):
-            raise TypeError('wrong type in cols, must be either str or int')
+            raise TypeError(
+                f'wrong type in cols ({tp}), must be either str or int')
         for c in cols:
             if type(c) != tp:
                 msg = 'All elements of cols must be of the same type'
@@ -243,8 +244,8 @@ def header(filename, cols=None, removechar='#', hmode='1', header_start=0,
         # select columns
         if cols is not None:
             if cols_items_are_str:
-                colnums = array([i for i, h in enumerate(head) \
-                                       if h in cols])
+                colnums = np.array(
+                    [i for i, h in enumerate(head) if h in cols])
                 head = [h for h in head if h in cols]
             else:
                 head = [h for i, h in enumerate(head) if i in cols]
@@ -266,15 +267,14 @@ def header(filename, cols=None, removechar='#', hmode='1', header_start=0,
             head = []
             if cols_items_are_str:
                 head = [i for i in cols if i in name]
-                colnums = array([name.index(i)
-                                       for i in cols if i in name])
+                colnums = np.array([name.index(i) for i in cols if i in name])
             else:
                 head = [name_i for name_i, num_i in zip(name, num)
                         if num_i-1 in cols]
-            head = array(head, dtype=str)
+            head = np.array(head, dtype=str)
 
     if lower:
-        head = array([h.lower() for h in head])
+        head = np.array([h.lower() for h in head])
 
     # remove leading and trailing spaces from each column name
     if strip:
@@ -398,218 +398,77 @@ def table(filename, cols=None, dtype=float, exclude='#', include=None,
     -------
     data : a list containing the selected columns in the file, each
         with the specified type.
-
     """
     if isinstance(cols, int) or isinstance(cols, string_types):
         cols = [cols]
+    elif cols is not None and not hasattr(cols, '__iter__'):
+        err = 'cols must be int, str or list of either (received' \
+             f' {type(cols)})'
+        raise TypeError(err)
+    if isinstance(dtype, type):
+        dtype = [dtype]
 
-    if cols is None:
-        data = []
-    else:
-        data = [[] for i in cols]
+    if isinstance(include, string_types):
+        include = [include]
+    if isinstance(exclude, string_types):
+        exclude = [exclude]
 
-    file = open(filename)
-    if include:
-        if isinstance(include, string_types):
-            include = [include]
-        for line in file:
-            if len(line.split()) == 0:
-                continue
-            if whole:
-                first = line.split(delimiter)[0]
-            for i in include:
-                if not whole:
-                    first = line.replace(' ', '')[:len(i)]
-                if first != i:
-                    continue
-                data = _append_single_line(
-                    data, line, delimiter, dtype, cols)
-    elif exclude:
-        if isinstance(include, string_types):
-            exclude = [exclude]
-        for i, line in enumerate(file):
-            if len(line.split()) == 0:
-                continue
-            add = True
-            if whole:
-                first = line.split(delimiter)[0]
-            for e in exclude:
-                if not whole:
-                    first = line.replace(' ', '')[:len(e)]
-                if first == e:
-                    add = False
-                    break
-            if add and i >= data_start:
-                data = _append_single_line(
-                    data, line, delimiter, dtype, cols)
-    else:
-        for i, line in enumerate(file):
-            if len(line.split()) > 0 and i >= data_start:
-                data = _append_single_line(data, line, delimiter, dtype, cols)
-
-    # remove leading and trailing spaces
-    if strip:
-        for i in range(len(data)):
-            if isinstance(data[i][0], string_types):
-                data[i] = char.strip(data[i], ' ')
-                data[i] = char.rstrip(data[i], ' ')
-
-    # if only one line is printed, don't want many arrays of length one
-    # but one single array (if force_array is set to False)
-    if not force_array:
-        if len(data) > 1:
-            if hasattr(data[0], '__iter__'):
-                if len(data[0]) == 1:
-                    table = []
-                    if dtype is None:
-                        for i in data:
-                            try:
-                                table.append(int(i[0]))
-                            except ValueError:
-                                try:
-                                    table.append(float(i[0]))
-                                except ValueError:
-                                    table.append(i[0])
-                    elif type(dtype) is type:
-                        for i in data:
-                            try:
-                                table.append(dtype(i[0]))
-                            except ValueError:
-                                table.append(i[0])
-                    else:
-                        for i, tp in zip(data, dtype):
-                            try:
-                                table.append(tp(i[0]))
-                            except ValueError:
-                                table.append(i[0])
-                    return table
-        # the same if only one column is selected
-        else:
-            data = data[0]
+    with open(filename) as file:
+        data = (_read_single_line(line, delimiter, cols, include,
+                                  exclude, whole=whole, strip=strip)
+                for line in file)
+        data = [i for i in data if i is not None]
+    # transpose. Numpy doesn't preserve object type so must do manually
+    data = [[i[j] for i in data]
+            for j in range(len(data[0]))]
+    #return data
+    # now convert to numpy array one by one with the requested type
+    if dtype is None:
+        for i, col in enumerate(data):
             try:
-                if len(data[0]) == 1:
-                    try:
-                        return dtype(data[0])
-                    except ValueError:
-                        return data[0][0]
-            except TypeError:
-                pass
-            except IndexError:
-                pass
-            try:
-                return array(data, dtype=dtype)
+                data[i] = np.array(col, dtype=float)
             except ValueError:
-                return array(data, dtype=str)
-    # many columns, many rows
-    table = []
-    if not isinstance(dtype, type):
-        for tp, row in zip(dtype, data):
-            try:
                 try:
-                    table.append(array(row, dtype=tp))
+                    data[i] = np.array(col, type=int)
                 except ValueError:
-                    table.append(array(row, dtype=str))
-            except IndexError:
-                print('WARNING: No data selected from file {0}'.format(
-                          filename))
-                return []
-    elif dtype is None:
-        for row in data:
-            try:
-                try:
-                    table.append(array(row, dtype=int))
-                except ValueError:
-                    try:
-                        table.append(array(row, dtype=float))
-                    except ValueError:
-                        table.append(array(row, dtype=str))
-            except IndexError:
-                print('WARNING: No data selected from file'.format(filename))
-                return []
+                    data[i] = np.array(col)
     else:
-        for row in data:
+        if len(dtype) == 1:
+            dtype = len(data) * dtype
+        else:
+            assert len(data) == len(dtype), \
+                f'number of dtypes ({len(dtype)}) different from number of' \
+                f' columns ({len(data)})'
+        for i, (col, tp) in enumerate(zip(data, dtype)):
             try:
-                try:
-                    table.append(array(row, dtype=dtype))
-                except ValueError:
-                    table.append(array(row, dtype=str))
-            except IndexError:
-                print('WARNING: No data selected from file'.format(filename))
-                return []
-    if cols is not None:
-        if len(cols) == 1:
-            return table[0]
-    return table
+                data[i] = np.array(col, dtype=tp)
+            except ValueError:
+                msg = f'column {i} cannot be converted to type {tp}'
+                raise ValueError(msg)
+    return data
 
 
-def _append_single_line(table, line, delimiter='', dtype=float, cols=None):
-    """
-    Auxiliary function, not meant to be used directly.
-
-    Appends a single line to a table. Devised to iteratively make a table from
-    a file. Can give a specified type to each field in the line (specified by
-    `dtype`).
-
-    """
-    N = len(table)
-
-    if delimiter in [' ', '', '\t']:
-        line = line.split()
-    else:
-        line = line.replace('\n', '').split(delimiter)
-    if not isinstance(dtype, type):
-        if cols is None:
-            if len(dtype) == len(line):
-                for i, dt, col in zip(count(), dtype, line):
-                    try:
-                        table[i].append(dt(col))
-                    except IndexError:
-                        table.append([])
-                        table[i].append(dt(col))
-            else:
-                msg = 'array dtype has a different length than the line'
-                msg += ' (dtype:{0}; line:{1})'.format(len(dtype), len(line))
-                raise IndexError(msg)
-        elif len(dtype) == len(cols):
-            for i, dt, col in zip(count(), dtype, cols):
-                table[i].append(dt(line[col]))
-            return table
-        else:
-            msg = 'arrays cols and dtype have different lengths in line'
-            msg += ' (cols:{0}; dtype:{1}; line:{2})'.format(len(cols),
-                                                             len(dtype),
-                                                             len(line))
-            raise IndexError(msg)
-
-    elif type(dtype) == type:
-        if cols is None:
-            for i, col in enumerate(line):
-                try:
-                    try:
-                        table[i].append(dtype(col))
-                    except ValueError:
-                        table[i].append(col)
-                except IndexError:
-                    table.append([])
-                    try:
-                        table[i].append(dtype(col))
-                    except ValueError:
-                        table[i].append(col)
-        else:
-            for i, col in enumerate(cols):
-                try:
-                    table[i].append(dtype(line[col]))
-                except ValueError:
-                    table[i].append(line[col])
-        return table
-    else:
-        if cols is None:
-            for l in line:
-                try:
-                    table[i].append(l)
-                except IndexError:
-                    table.append([])
-                    table[i].append(l)
-        else:
-            table = [line[col] for col in cols]
-    return table
+def _read_single_line(line, delimiter, cols, include=None, exclude=None,
+                      whole=False, strip=True):
+    if strip:
+        line = line.strip()
+    words = line.split(delimiter)
+    # only register lines listed in ``include``
+    if include is not None:
+         if whole and words[0] not in include:
+            return
+         elif not sum([(line[:len(i)] == i) for i in include]):
+            return
+    # discard lines listed in ``exclude``
+    if exclude is not None:
+        if whole and words[0] in exclude:
+            return
+        elif sum([(line[:len(e)] == e) for e in exclude]):
+            return
+    # make cols a list of length len(line)
+    if cols is None:
+        cols = range(len(words))
+    elif len(cols) == 1:
+        cols = len(words) * cols
+    line_data = [words[col] for col in cols]
+    return line_data
