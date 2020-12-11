@@ -12,6 +12,9 @@ except ImportError as err:
           'https://github.com/cristobal-sifon/myhelpers')
     sys.exit()
 
+def read_requirements(reqfile):
+    return [i for i in open(reqfile).read().split('\n') if i]
+
 
 setup(
     name='readfile',
@@ -23,5 +26,5 @@ setup(
     url='https://github.com/cristobal-sifon/readfile',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
-    install_requires=['numpy>=1.5.0']
+    install_requires=read_requirements('requirements.txt'),
     )
