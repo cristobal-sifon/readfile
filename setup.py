@@ -22,7 +22,7 @@ setup(
     description='A flexible module to read ascii files',
     author='Cristobal Sifon',
     author_email='cristobal.sifon@pucv.cl',
-    long_description=read(os.path.join(find_location(__file__), 'README.md')),
+    long_description=read(os.path.join(find_location(__file__), 'README.rst')),
     url='https://github.com/cristobal-sifon/readfile',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
